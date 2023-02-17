@@ -1,0 +1,39 @@
+name: Test
+on:
+  push:
+    branches:
+      - main
+jobs:
+  main:
+    name: Release and publish Node package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest tag
+        id: get_latest_tag
+        uses: actions-ecosystem/action-get-latest-tag@v1
+        with:
+          initial_version: 'v1.0.0'
+
+      - name: See if version changed
+        run: |
+          if [[ "v1.0.0" == "${{ steps.get_latest_tag.outputs.tag }}" ]]; then
+            echo "VERSION_CHANGED=false" >> "$GITHUB_ENV"
+          else
+            echo "VERSION_CHANGED=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Create tag
+        uses: rickstaa/action-create-tag@v1
+        if: env.VERSION_CHANGED == 'true'
+        with:
+          tag: "v1.0.0"
+
+      - name: Create release
+        if: env.VERSION_CHANGED == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          input_tag_name: ${{ steps.get_latest_tag.outputs.tag }}
+          tag_name: 'v1.0.0'
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
